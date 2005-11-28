@@ -1,0 +1,6 @@
+Revision history for Perl extension Algorithm::SVMLight.
+
+0.01  Thu Jul  7 11:45:21 2005
+	- original version; created by h2xs 1.22 with options
+		-XA -n Algorithm::SVMLight
+

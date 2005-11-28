@@ -1,0 +1,280 @@
+--- svm_common.h	Fri Sep  3 14:22:55 2004
++++ svm_common.h	Fri Jul  8 16:16:54 2005
+@@ -284,6 +284,8 @@
+ void   read_documents(char *, DOC ***, double **, long *, long *);
+ int    parse_document(char *, WORD *, double *, long *, long *, double *, long *, long, char **);
+ double *read_alphas(char *,long);
++void   set_learning_defaults(LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm);
++int    check_learning_parms(LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm);
+ void   nol_ll(char *, long *, long *, long *);
+ long   minl(long, long);
+ long   maxl(long, long);
+--- svm_learn_main.c	Wed Aug 25 19:03:59 2004
++++ svm_learn_main.c	Fri Jul  8 16:17:30 2005
+@@ -109,38 +109,12 @@
+   
+   /* set default */
+   strcpy (modelfile, "svm_model");
+-  strcpy (learn_parm->predfile, "trans_predictions");
+-  strcpy (learn_parm->alphafile, "");
+   strcpy (restartfile, "");
+   (*verbosity)=1;
+-  learn_parm->biased_hyperplane=1;
+-  learn_parm->sharedslack=0;
+-  learn_parm->remove_inconsistent=0;
+-  learn_parm->skip_final_opt_check=0;
+-  learn_parm->svm_maxqpsize=10;
+-  learn_parm->svm_newvarsinqp=0;
+-  learn_parm->svm_iter_to_shrink=-9999;
+-  learn_parm->maxiter=100000;
+-  learn_parm->kernel_cache_size=40;
+-  learn_parm->svm_c=0.0;
+-  learn_parm->eps=0.1;
+-  learn_parm->transduction_posratio=-1.0;
+-  learn_parm->svm_costratio=1.0;
+-  learn_parm->svm_costratio_unlab=1.0;
+-  learn_parm->svm_unlabbound=1E-5;
+-  learn_parm->epsilon_crit=0.001;
+-  learn_parm->epsilon_a=1E-15;
+-  learn_parm->compute_loo=0;
+-  learn_parm->rho=1.0;
+-  learn_parm->xa_depth=0;
+-  kernel_parm->kernel_type=0;
+-  kernel_parm->poly_degree=3;
+-  kernel_parm->rbf_gamma=1.0;
+-  kernel_parm->coef_lin=1;
+-  kernel_parm->coef_const=1;
+-  strcpy(kernel_parm->custom,"empty");
+   strcpy(type,"c");
+ 
++  set_learning_defaults(learn_parm, kernel_parm);
++
+   for(i=1;(i<argc) && ((argv[i])[0] == '-');i++) {
+     switch ((argv[i])[1]) 
+       { 
+@@ -215,74 +189,8 @@
+     print_help();
+     exit(0);
+   }    
+-  if((learn_parm->skip_final_opt_check) 
+-     && (kernel_parm->kernel_type == LINEAR)) {
+-    printf("\nIt does not make sense to skip the final optimality check for linear kernels.\n\n");
+-    learn_parm->skip_final_opt_check=0;
+-  }    
+-  if((learn_parm->skip_final_opt_check) 
+-     && (learn_parm->remove_inconsistent)) {
+-    printf("\nIt is necessary to do the final optimality check when removing inconsistent \nexamples.\n");
+-    wait_any_key();
+-    print_help();
+-    exit(0);
+-  }    
+-  if((learn_parm->svm_maxqpsize<2)) {
+-    printf("\nMaximum size of QP-subproblems not in valid range: %ld [2..]\n",learn_parm->svm_maxqpsize); 
+-    wait_any_key();
+-    print_help();
+-    exit(0);
+-  }
+-  if((learn_parm->svm_maxqpsize<learn_parm->svm_newvarsinqp)) {
+-    printf("\nMaximum size of QP-subproblems [%ld] must be larger than the number of\n",learn_parm->svm_maxqpsize); 
+-    printf("new variables [%ld] entering the working set in each iteration.\n",learn_parm->svm_newvarsinqp); 
+-    wait_any_key();
+-    print_help();
+-    exit(0);
+-  }
+-  if(learn_parm->svm_iter_to_shrink<1) {
+-    printf("\nMaximum number of iterations for shrinking not in valid range: %ld [1,..]\n",learn_parm->svm_iter_to_shrink);
+-    wait_any_key();
+-    print_help();
+-    exit(0);
+-  }
+-  if(learn_parm->svm_c<0) {
+-    printf("\nThe C parameter must be greater than zero!\n\n");
+-    wait_any_key();
+-    print_help();
+-    exit(0);
+-  }
+-  if(learn_parm->transduction_posratio>1) {
+-    printf("\nThe fraction of unlabeled examples to classify as positives must\n");
+-    printf("be less than 1.0 !!!\n\n");
+-    wait_any_key();
+-    print_help();
+-    exit(0);
+-  }
+-  if(learn_parm->svm_costratio<=0) {
+-    printf("\nThe COSTRATIO parameter must be greater than zero!\n\n");
+-    wait_any_key();
+-    print_help();
+-    exit(0);
+-  }
+-  if(learn_parm->epsilon_crit<=0) {
+-    printf("\nThe epsilon parameter must be greater than zero!\n\n");
+-    wait_any_key();
+-    print_help();
+-    exit(0);
+-  }
+-  if(learn_parm->rho<0) {
+-    printf("\nThe parameter rho for xi/alpha-estimates and leave-one-out pruning must\n");
+-    printf("be greater than zero (typically 1.0 or 2.0, see T. Joachims, Estimating the\n");
+-    printf("Generalization Performance of an SVM Efficiently, ICML, 2000.)!\n\n");
+-    wait_any_key();
+-    print_help();
+-    exit(0);
+-  }
+-  if((learn_parm->xa_depth<0) || (learn_parm->xa_depth>100)) {
+-    printf("\nThe parameter depth for ext. xi/alpha-estimates must be in [0..100] (zero\n");
+-    printf("for switching to the conventional xa/estimates described in T. Joachims,\n");
+-    printf("Estimating the Generalization Performance of an SVM Efficiently, ICML, 2000.)\n");
++
++  if (!check_learning_parms(learn_parm, kernel_parm)) {
+     wait_any_key();
+     print_help();
+     exit(0);
+--- svm_classify.c	Wed Jul 14 13:50:00 2004
++++ svm_classify.c	Mon Aug  8 15:22:55 2005
+@@ -78,19 +78,20 @@
+ 	if((words[j]).wnum>model->totwords) /* are not larger than in     */
+ 	  (words[j]).wnum=0;               /* model. Remove feature if   */
+       }                                        /* necessary.                 */
+-      doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
+-      t1=get_runtime();
++    }
++    doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
++    t1=get_runtime();
++
++    if(model->kernel_parm.kernel_type == 0) {   /* linear kernel */
+       dist=classify_example_linear(model,doc);
+-      runtime+=(get_runtime()-t1);
+-      free_example(doc,1);
+     }
+     else {                             /* non-linear kernel */
+-      doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
+-      t1=get_runtime();
+       dist=classify_example(model,doc);
+-      runtime+=(get_runtime()-t1);
+-      free_example(doc,1);
+     }
++
++    runtime+=(get_runtime()-t1);
++    free_example(doc,1);
++    
+     if(dist>0) {
+       if(pred_format==0) { /* old weired output format */
+ 	fprintf(predfl,"%.8g:+1 %.8g:-1\n",dist,-dist);
+--- svm_common.c	Fri Aug 27 17:05:25 2004
++++ svm_common.c	Wed Sep  7 15:51:52 2005
+@@ -887,6 +887,97 @@
+   return(alpha);
+ }
+ 
++void set_learning_defaults(LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm)
++{
++  learn_parm->type=CLASSIFICATION;
++  strcpy (learn_parm->predfile, "trans_predictions");
++  strcpy (learn_parm->alphafile, "");
++  learn_parm->biased_hyperplane=1;
++  learn_parm->sharedslack=0;
++  learn_parm->remove_inconsistent=0;
++  learn_parm->skip_final_opt_check=0;
++  learn_parm->svm_maxqpsize=10;
++  learn_parm->svm_newvarsinqp=0;
++  learn_parm->svm_iter_to_shrink=2;
++  learn_parm->maxiter=100000;
++  learn_parm->kernel_cache_size=40;
++  learn_parm->svm_c=0.0;
++  learn_parm->eps=0.1;
++  learn_parm->transduction_posratio=-1.0;
++  learn_parm->svm_costratio=1.0;
++  learn_parm->svm_costratio_unlab=1.0;
++  learn_parm->svm_unlabbound=1E-5;
++  learn_parm->epsilon_crit=0.001;
++  learn_parm->epsilon_a=1E-15;
++  learn_parm->compute_loo=0;
++  learn_parm->rho=1.0;
++  learn_parm->xa_depth=0;
++
++  kernel_parm->kernel_type=LINEAR;
++  kernel_parm->poly_degree=3;
++  kernel_parm->rbf_gamma=1.0;
++  kernel_parm->coef_lin=1;
++  kernel_parm->coef_const=1;
++  strcpy(kernel_parm->custom,"empty");
++}
++
++int check_learning_parms(LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm)
++{
++  if((learn_parm->skip_final_opt_check) 
++     && (kernel_parm->kernel_type == LINEAR)) {
++    printf("\nIt does not make sense to skip the final optimality check for linear kernels.\n\n");
++    learn_parm->skip_final_opt_check=0;
++  }    
++  if((learn_parm->skip_final_opt_check) 
++     && (learn_parm->remove_inconsistent)) {
++    printf("\nIt is necessary to do the final optimality check when removing inconsistent \nexamples.\n");
++    return 0;
++  }    
++  if((learn_parm->svm_maxqpsize<2)) {
++    printf("\nMaximum size of QP-subproblems not in valid range: %ld [2..]\n",learn_parm->svm_maxqpsize); 
++    return 0;
++  }
++  if((learn_parm->svm_maxqpsize<learn_parm->svm_newvarsinqp)) {
++    printf("\nMaximum size of QP-subproblems [%ld] must be larger than the number of\n",learn_parm->svm_maxqpsize); 
++    printf("new variables [%ld] entering the working set in each iteration.\n",learn_parm->svm_newvarsinqp); 
++    return 0;
++  }
++  if(learn_parm->svm_iter_to_shrink<1) {
++    printf("\nMaximum number of iterations for shrinking not in valid range: %ld [1,..]\n",learn_parm->svm_iter_to_shrink);
++    return 0;
++  }
++  if(learn_parm->svm_c<0) {
++    printf("\nThe C parameter must be greater than zero!\n\n");
++    return 0;
++  }
++  if(learn_parm->transduction_posratio>1) {
++    printf("\nThe fraction of unlabeled examples to classify as positives must\n");
++    printf("be less than 1.0 !!!\n\n");
++    return 0;
++  }
++  if(learn_parm->svm_costratio<=0) {
++    printf("\nThe COSTRATIO parameter must be greater than zero!\n\n");
++    return 0;
++  }
++  if(learn_parm->epsilon_crit<=0) {
++    printf("\nThe epsilon parameter must be greater than zero!\n\n");
++    return 0;
++  }
++  if(learn_parm->rho<0) {
++    printf("\nThe parameter rho for xi/alpha-estimates and leave-one-out pruning must\n");
++    printf("be greater than zero (typically 1.0 or 2.0, see T. Joachims, Estimating the\n");
++    printf("Generalization Performance of an SVM Efficiently, ICML, 2000.)!\n\n");
++    return 0;
++  }
++  if((learn_parm->xa_depth<0) || (learn_parm->xa_depth>100)) {
++    printf("\nThe parameter depth for ext. xi/alpha-estimates must be in [0..100] (zero\n");
++    printf("for switching to the conventional xa/estimates described in T. Joachims,\n");
++    printf("Estimating the Generalization Performance of an SVM Efficiently, ICML, 2000.)\n");
++    return 0;
++  }
++  return 1;
++}
++
+ void nol_ll(char *file, long int *nol, long int *wol, long int *ll) 
+      /* Grep through file and count number of lines, maximum number of
+         spaces per line, and longest line. */
+--- Makefile	Fri Sep  3 15:56:45 2004
++++ Makefile	Thu Jul  7 14:27:03 2005
+@@ -12,9 +12,14 @@
+ LD=gcc                          # used linker
+ LFLAGS=-O3                      # linker flags
+ LIBS=-L. -lm                    # used libraries
++RANLIB=ranlib
+ 
+ 
+-all: svm_learn_hideo svm_classify
++all: svm_learn_hideo svm_classify libsvmlight.a
++
++libsvmlight.a: svm_learn.o svm_common.o svm_hideo.o
++	$(AR) r $@ $^
++	$(RANLIB) $@
+ 
+ tidy: 
+ 	rm -f *.o 

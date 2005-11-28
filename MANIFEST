@@ -1,0 +1,10 @@
+Build.PL
+Changes
+INSTALL
+lib/Algorithm/SVMLight.pm
+lib/Algorithm/SVMLight.xs
+Makefile.PL
+MANIFEST
+META.yml
+SVMLight.patch
+t/01-basic.t

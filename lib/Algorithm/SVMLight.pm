@@ -1,0 +1,394 @@
+package Algorithm::SVMLight;
+
+use strict;
+use DynaLoader ();
+
+use vars qw($VERSION @ISA);
+
+$VERSION = '0.02';
+@ISA = qw(DynaLoader);
+__PACKAGE__->bootstrap( $VERSION );
+
+
+sub new {
+  my $package = shift;
+  my $self = bless {
+		    @_,
+		    features => {},
+		    rfeatures => [undef],
+		   }, $package;
+  $self->_xs_init;
+  $self->_param_init;
+  return $self;
+}
+
+my @params = 
+  qw(
+     type
+     svm_c
+     eps
+     svm_costratio
+     transduction_posratio
+     biased_hyperplane
+     sharedslack
+     svm_maxqpsize
+     svm_newvarsinqp
+     kernel_cache_size
+     epsilon_crit
+     epsilon_shrink
+     svm_iter_to_shrink
+     maxiter
+     remove_inconsistent
+     skip_final_opt_check
+     compute_loo
+     rho
+     xa_depth
+     predfile
+     alphafile
+    );
+
+
+sub _param_init {
+  my $self = shift;
+  foreach my $param (@params) {
+    if (exists $self->{$param}) {
+      my $method = "set_$param";
+      $self->$method($self->{$param});
+    }
+  }
+}
+
+sub is_trained {
+  my $self = shift;
+  return exists $self->{_model};
+}
+
+sub feature_names {
+  my $self = shift;
+  return keys %{ $self->{features} };
+}
+
+sub predict {
+  my ($self, %params) = @_;
+  for ('attributes') {
+    die "Missing required '$_' parameter" unless exists $params{$_};
+  }
+  
+  my (@values, @indices);
+  while (my ($key) = each %{ $params{attributes} }) {
+    push @indices, $self->{features}{$key} if exists $self->{features}{$key};
+  }
+
+  @indices = sort {$a <=> $b} @indices;
+  foreach my $i (@indices) {
+    push @values, $params{attributes}{ $self->{rfeatures}[$i] };
+  }
+
+  # warn "Predicting: (@indices), (@values)\n";
+  $self->predict_i(\@indices, \@values);
+}
+
+sub add_instance {
+  my ($self, %params) = @_;
+  for ('attributes', 'label') {
+    die "Missing required '$_' parameter" unless exists $params{$_};
+  }
+  for ($params{label}) {
+    die "Label must be a real number, not '$_'" unless /^-?\d+(\.\d+)?$/;
+  }
+  
+  my @values;
+  my @indices;
+  while (my ($key, $val) = each %{ $params{attributes} }) {
+    unless ( exists $self->{features}{$key} ) {
+      $self->{features}{$key} = 1 + keys %{ $self->{features} };
+      push @{ $self->{rfeatures} }, $key;
+    }
+    push @indices, $self->{features}{$key};
+  }
+
+  @indices = sort { $a <=> $b} @indices;
+  foreach my $i (@indices) {
+    push @values, $params{attributes}{ $self->{rfeatures}[$i] };
+  }
+
+  #warn "Adding document: (@indices), (@values) => $params{label}\n";
+  $self->add_instance_i($params{label}, "", \@indices, \@values);
+}
+
+
+1;
+__END__
+
+=head1 NAME
+
+Algorithm::SVMLight - Perl interface to SVMLight Machine-Learning Package
+
+=head1 SYNOPSIS
+
+  use Algorithm::SVMLight;
+  my $s = new Algorithm::SVMLight;
+  
+  $s->add_instance
+    (attributes => {foo => 1, bar => 1, baz => 3},
+     label => 1);
+  
+  $s->add_instance
+    (attributes => {foo => 2, blurp => 1},
+     label => -1);
+  
+  ... repeat for several more instances, then:
+  $s->train;
+
+  # Find results for unseen instances
+  my $result = $s->predict
+    (attributes => {bar => 3, blurp => 2});
+
+
+=head1 DESCRIPTION
+
+This module implements a perl interface to Thorsten Joachims' SVMLight
+package:
+
+=over 4
+
+SVMLight is an implementation of Vapnik's Support Vector Machine
+[Vapnik, 1995] for the problem of pattern recognition, for the problem
+of regression, and for the problem of learning a ranking function. The
+optimization algorithms used in SVMlight are described in [Joachims,
+2002a ]. [Joachims, 1999a]. The algorithm has scalable memory
+requirements and can handle problems with many thousands of support
+vectors efficiently.
+
+ -- http://svmlight.joachims.org/
+
+=back
+
+Support Vector Machines in general, and SVMLight specifically,
+represent some of the best-performing Machine Learning approaches in
+domains such as text categorization, image recognition, bioinformatics
+string processing, and others.
+
+The underlying SVMLight engine deals with features as integers, not
+strings.  Since features are commonly thought of as strings (e.g. the
+words in a document, or mnemonic representations of engineered
+features), we provide in C<Algorithm::SVMLight> a simple mechanism for
+mapping back and forth between feature names (strings) and feature
+indices (integers).  If you want to use this mechanism, use the
+C<add_instance()> and C<predict()> methods.  If not, use the
+C<add_instance_i()> (or C<read_instances()>) and C<predict_i()>
+methods.
+
+=head1 INSTALLATION
+
+For installation instructions, please see the F<INSTALL> file included
+with this distribution.
+
+=head1 METHODS
+
+=over 4
+
+=item new(...)
+
+Creates a new C<Algorithm::SVMLight> object and returns it.  Any named
+arguments that correspond to SVM parameters will cause their
+corresponding C<set_I<***>()> method to be invoked:
+
+  $s = Algorithm::SVMLight->new(
+         type => 2,              # Regression model
+         biased_hyperplane => 0, # Nonbiased
+         kernel_type => 3,       # Sigmoid
+  );
+
+See the C<set_I<***>(...)> method for a list of such parameters.
+
+=item set_I<***>(...)
+
+The following parameters can be set by using methods with their
+corresponding names - for instance, the C<maxiter> parameter can be
+set by using C<set_maxiter($x)>, where C<$x> is the new desired value.
+
+  Learning parameters:
+     type
+     svm_c
+     eps
+     svm_costratio
+     transduction_posratio
+     biased_hyperplane
+     sharedslack
+     svm_maxqpsize
+     svm_newvarsinqp
+     kernel_cache_size
+     epsilon_crit
+     epsilon_shrink
+     svm_iter_to_shrink
+     maxiter
+     remove_inconsistent
+     skip_final_opt_check
+     compute_loo
+     rho
+     xa_depth
+     predfile
+     alphafile
+
+  Kernel parameters:
+     kernel_type
+     poly_degree
+     rbf_gamma
+     coef_lin
+     coef_const
+     custom
+
+For an explanation of these parameters, you may be interested in
+looking at the F<svm_common.h> file in the SVMLight distribution.
+
+It would be a good idea if you only set these parameters via arguments
+to C<new()> (see above) or right after calling C<new()>, since I don't
+think the underlying C code expects them to change in the middle of a
+process.
+
+=item add_instance(label => $x, attributes => \%y)
+
+Adds a training instance to the set of instances which will be used to
+train the model.  An C<attributes> parameter specifies a hash of
+attribute-value pairs for the instance, and a C<label> parameter
+specifies the label.  The label must be a number, and typically it
+should be C<1> for positive training instances and C<-1> for negative
+training instances.  The keys of the C<attributes> hash should be
+strings, and the values should be numbers (the values of each attribute).
+
+All training instances share the same attribute-space; if an attribute
+is unspecified for a certain instance, it is equivalent to specifying
+a value of zero.  Typically you can save a lot of memory (and
+potentially training time) by omitting zero-valued attributes.
+
+=item add_instance_i($label, \@indices, \@values)
+
+This is just like C<add_instance()>, but bypasses all the
+string-to-integer mapping of feature names.  Use this method when you
+already have your features represented as integers.  The C<$label>
+parameter must be a number (typically C<1> or C<-1>), and the
+C<@indices> and C<@values> arrays must be parallel arrays of indices
+and their corresponding values.  Furthermore, the indices must be
+positive integers and given in strictly increasing order.
+
+If you like C<add_instance_i()>, I've got a C<predict_i()> I bet
+you'll just love.
+
+=item read_instances($file)
+
+An alternative to calling C<add_instance_i()> for each instance is to
+organize a collection of training data into SVMLight's standard
+"example_file" format, then call this C<read_instances()> method to
+import the data.  Under the hood, this calls SVMLight's
+C<read_documents()> C function.  When it's convenient for you to
+organize the data in this manner, you may see speed improvements.
+
+=item train()
+
+After a sufficient number of instances have been added to your model,
+call C<train()> in order to actually learn the underlying
+discriminative Machine Learning model.
+
+Depending on the number of instances (and to a lesser extent the total
+number of attributes), this method might take a while.  If you want to
+train the model only once and save it for later re-use in a different
+context, see the C<write_model()> and C<read_model()> methods.
+
+=item is_trained()
+
+Returns a boolean value indicating whether or not C<train()> has been
+called on this model.
+
+=item predict(attributes => \%y)
+
+After C<train()> has been called, the model may be applied to
+previously-unseen combinations of attributes.  The C<predict()> method
+accepts an C<attributes> parameter just like C<add_instance()>, and
+returns its best prediction of the label that would apply to the given
+attributes.  The sign of the returned label (positive or negative)
+indicates whether the new instance is considered a positive or
+negative instance, and the magnitude of the label corresponds in some
+way to the confidence with which the model is making that assertion.
+
+=item predict_i(\@indices, \@values)
+
+This is just like C<predict()>, but bypasses all the string-to-integer
+mapping of feature names.  See also C<add_instance_i()>.
+
+=item write_model($file)
+
+Saves the given trained model to the file C<$file>.  The model may
+later be re-loaded using the C<read_model()> method.  The model is
+written using SVMLight's C<write_model()> C function, so it will be
+fully compatible with SVMLight command-line tools like
+C<svm_classify>.
+
+=item read_model($file)
+
+Reads a model that has previously been written with C<write_model()>:
+
+  my $m = Algorithm::SVMLight->new();
+  $m->read_model($file);
+
+The model file is read using SVMLight's C<read_model()> C function, so
+if you want to, you could initially create the model with one of
+SVMLight's command-line tools like C<svm_learn>.
+
+=item feature_names()
+
+Returns a list of feature names that have been fed to
+C<add_instance()> as keys of the C<attribute> parameter, or in a
+scalar context the number of such names.
+
+=item num_features()
+
+Returns the number of features known to this model.  Note that if you
+use C<add_instance_i()> or C<read_instances()>, some of the features
+may never actually have been I<seen> before, because you could add
+instances with only indices 2, 5, and 37, never having added any
+instances with the indices in between, but C<num_features()> will
+return 37 in this case.  This is because after training, an instance
+could be passed to the C<predict()> method with real values for these
+previously unseen features.  If you just use C<add_instance()>
+instead, you'll probably never run into this issue, and in a scalar
+context C<num_features()> will look just like C<feature_names()>.
+
+=item num_instances()
+
+Returns the number of training instances known to the model.  It
+should be fine to call this method either before or after training
+actually occurs.
+
+=back
+
+=head1 SEE ALSO
+
+L<Algorithm::NaiveBayes>, L<AI::DecisionTree>
+
+L<http://svmlight.joachims.org/>
+
+=head1 AUTHOR
+
+Ken Williams, E<lt>kwilliams@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+The C<Algorithm::SVMLight> perl interface is copyright (C) 2005
+Thomson Legal & Regulatory, and written by Ken Williams.  It is free
+software; you can redistribute it and/or modify it under the same
+terms as C<perl> itself.
+
+Thorsten Joachims and/or Cornell University of Ithaca, NY control the
+copyright of SVMLight itself - you will find full copyright and
+license information in its distribution.  You are responsible for
+obtaining an appropriate license for SVMLight if you intend to use
+C<Algorithm::SVMLight>.  In particular, please note that SVMLight "is
+granted free of charge for research and education purposes. However
+you must obtain a license from the author to use it for commercial
+purposes."
+
+To avoid any copyright clashes, the F<SVMLight.patch> file distributed
+here is granted under the same license terms as SVMLight itself.
+
+=cut
