@@ -276,6 +276,33 @@ CODE:
   write_model(modelfile, m);
 }
 
+SV*
+get_linear_weights(SV *self)
+CODE:
+{
+  MODEL *m;
+  int i;
+  AV *result;
+
+  if (!hv_exists((HV*) SvRV(self), "_model", 6))
+    croak("Model has not yet been trained");
+
+  m = (MODEL*) self_fetch(self, "_model");
+  if (m->kernel_parm.kernel_type != 0)
+    croak("Kernel type is not linear");
+
+  result = newAV();
+  av_push(result, newSVnv(m->b));
+
+  for (i=1; i<m->totwords+1; i++) {
+    av_push(result, newSVnv(m->lin_weights[i]));
+  }
+
+  RETVAL = newRV_noinc(result);
+}
+OUTPUT:
+  RETVAL
+
 void
 read_model(SV *self, char *modelfile)
 CODE:

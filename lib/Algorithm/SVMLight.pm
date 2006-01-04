@@ -5,7 +5,7 @@ use DynaLoader ();
 
 use vars qw($VERSION @ISA);
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 @ISA = qw(DynaLoader);
 __PACKAGE__->bootstrap( $VERSION );
 
@@ -334,6 +334,23 @@ Reads a model that has previously been written with C<write_model()>:
 The model file is read using SVMLight's C<read_model()> C function, so
 if you want to, you could initially create the model with one of
 SVMLight's command-line tools like C<svm_learn>.
+
+=item get_linear_weights()
+
+After training a linear model (or reading in a model file), this
+method will return a reference to an array containing the linear
+weights of the model.  This can be useful for model inspection, to see
+which features are having the greatest impact on decision-making.
+
+ my $arrayref = $m->get_linear_weights();
+
+The first element (position 0) of the array will be the threshold
+C<b>, and the rest of the elements will be the weights themselves.
+Thus from 1 upward, the indices align with SVMLight's internal
+indices.
+
+If the model has not yet been trained, or if the kernel type is not
+linear, an exception will be thrown.
 
 =item feature_names()
 
