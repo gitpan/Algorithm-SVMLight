@@ -5,7 +5,7 @@ use DynaLoader ();
 
 use vars qw($VERSION @ISA);
 
-$VERSION = '0.03';
+$VERSION = '0.04';
 @ISA = qw(DynaLoader);
 __PACKAGE__->bootstrap( $VERSION );
 
@@ -45,6 +45,13 @@ my @params =
      xa_depth
      predfile
      alphafile
+
+     kernel_type
+     poly_degree
+     rbf_gamma
+     coef_lin
+     coef_const
+     custom
     );
 
 
@@ -262,7 +269,7 @@ is unspecified for a certain instance, it is equivalent to specifying
 a value of zero.  Typically you can save a lot of memory (and
 potentially training time) by omitting zero-valued attributes.
 
-=item add_instance_i($label, \@indices, \@values)
+=item add_instance_i($label, $name, \@indices, \@values)
 
 This is just like C<add_instance()>, but bypasses all the
 string-to-integer mapping of feature names.  Use this method when you

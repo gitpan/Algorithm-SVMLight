@@ -12,6 +12,7 @@ my $build = Module::Build->new
 		      'Module::Build' => '0.21',
 		      'Test::More' => 0,
 		     },
+   sign => 1,
   );
 
 $build->create_build_script;

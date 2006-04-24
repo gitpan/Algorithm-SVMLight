@@ -369,102 +369,295 @@ CODE:
   Safefree(c);
 }
 
- /* learn_parm setting stuff */
+void
+set_biased_hyperplane (SV *self, long val)
+CODE:
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->biased_hyperplane = val;
+
+long
+get_biased_hyperplane (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->biased_hyperplane;
+OUTPUT:
+  RETVAL
 
 void
-set_type (SV *self, long type)
+set_compute_loo (SV *self, long val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->type = type;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->compute_loo = val;
+
+long
+get_compute_loo (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->compute_loo;
+OUTPUT:
+  RETVAL
 
 void
-set_svm_c (SV *self, double svm_c)
+set_eps (SV *self, double val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_c = svm_c;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->eps = val;
+
+double
+get_eps (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->eps;
+OUTPUT:
+  RETVAL
 
 void
-set_eps (SV *self, double eps)
+set_epsilon_crit (SV *self, double val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->eps = eps;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->epsilon_crit = val;
+
+double
+get_epsilon_crit (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->epsilon_crit;
+OUTPUT:
+  RETVAL
 
 void
-set_svm_costratio (SV *self, double svm_costratio)
+set_epsilon_shrink (SV *self, double val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_costratio = svm_costratio;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->epsilon_shrink = val;
+
+double
+get_epsilon_shrink (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->epsilon_shrink;
+OUTPUT:
+  RETVAL
 
 void
-set_transduction_posratio (SV *self, double transduction_posratio)
+set_kernel_cache_size (SV *self, long val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->transduction_posratio = transduction_posratio;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->kernel_cache_size = val;
+
+long
+get_kernel_cache_size (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->kernel_cache_size;
+OUTPUT:
+  RETVAL
 
 void
-set_biased_hyperplane (SV *self, long biased_hyperplane)
+set_maxiter (SV *self, long val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->biased_hyperplane = biased_hyperplane;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->maxiter = val;
+
+long
+get_maxiter (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->maxiter;
+OUTPUT:
+  RETVAL
 
 void
-set_sharedslack (SV *self, long sharedslack)
+set_remove_inconsistent (SV *self, long val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->sharedslack = sharedslack;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->remove_inconsistent = val;
+
+long
+get_remove_inconsistent (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->remove_inconsistent;
+OUTPUT:
+  RETVAL
 
 void
-set_svm_maxqpsize (SV *self, long svm_maxqpsize)
+set_rho (SV *self, double val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_maxqpsize = svm_maxqpsize;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->rho = val;
+
+double
+get_rho (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->rho;
+OUTPUT:
+  RETVAL
 
 void
-set_svm_newvarsinqp (SV *self, long svm_newvarsinqp)
+set_sharedslack (SV *self, long val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_newvarsinqp = svm_newvarsinqp;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->sharedslack = val;
+
+long
+get_sharedslack (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->sharedslack;
+OUTPUT:
+  RETVAL
 
 void
-set_kernel_cache_size (SV *self, long kernel_cache_size)
+set_skip_final_opt_check (SV *self, long val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->kernel_cache_size = kernel_cache_size;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->skip_final_opt_check = val;
+
+long
+get_skip_final_opt_check (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->skip_final_opt_check;
+OUTPUT:
+  RETVAL
 
 void
-set_epsilon_crit (SV *self, double epsilon_crit)
+set_svm_c (SV *self, double val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->epsilon_crit = epsilon_crit;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_c = val;
+
+double
+get_svm_c (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_c;
+OUTPUT:
+  RETVAL
 
 void
-set_epsilon_shrink (SV *self, double epsilon_shrink)
+set_svm_costratio (SV *self, double val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->epsilon_shrink = epsilon_shrink;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_costratio = val;
+
+double
+get_svm_costratio (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_costratio;
+OUTPUT:
+  RETVAL
 
 void
-set_svm_iter_to_shrink (SV *self, long svm_iter_to_shrink)
+set_svm_iter_to_shrink (SV *self, long val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_iter_to_shrink = svm_iter_to_shrink;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_iter_to_shrink = val;
+
+long
+get_svm_iter_to_shrink (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_iter_to_shrink;
+OUTPUT:
+  RETVAL
 
 void
-set_maxiter (SV *self, long maxiter)
+set_svm_maxqpsize (SV *self, long val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->maxiter = maxiter;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_maxqpsize = val;
+
+long
+get_svm_maxqpsize (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_maxqpsize;
+OUTPUT:
+  RETVAL
 
 void
-set_remove_inconsistent (SV *self, long remove_inconsistent)
+set_svm_newvarsinqp (SV *self, long val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->remove_inconsistent = remove_inconsistent;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_newvarsinqp = val;
+
+long
+get_svm_newvarsinqp (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->svm_newvarsinqp;
+OUTPUT:
+  RETVAL
 
 void
-set_skip_final_opt_check (SV *self, long skip_final_opt_check)
+set_transduction_posratio (SV *self, double val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->skip_final_opt_check = skip_final_opt_check;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->transduction_posratio = val;
+
+double
+get_transduction_posratio (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->transduction_posratio;
+OUTPUT:
+  RETVAL
 
 void
-set_compute_loo (SV *self, long compute_loo)
+set_type (SV *self, long val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->compute_loo = compute_loo;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->type = val;
+
+long
+get_type (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->type;
+OUTPUT:
+  RETVAL
 
 void
-set_rho (SV *self, double rho)
+set_xa_depth (SV *self, long val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->rho = rho;
+  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->xa_depth = val;
+
+long
+get_xa_depth (SV *self)
+CODE:
+  RETVAL = ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->xa_depth;
+OUTPUT:
+  RETVAL
 
 void
-set_xa_depth (SV *self, long xa_depth)
+set_coef_const (SV *self, double val)
 CODE:
-  ((LEARN_PARM*) self_fetch(self, "_learn_parm"))->xa_depth = xa_depth;
+  ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->coef_const = val;
+
+double
+get_coef_const (SV *self)
+CODE:
+  RETVAL = ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->coef_const;
+OUTPUT:
+  RETVAL
+
+void
+set_coef_lin (SV *self, double val)
+CODE:
+  ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->coef_lin = val;
+
+double
+get_coef_lin (SV *self)
+CODE:
+  RETVAL = ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->coef_lin;
+OUTPUT:
+  RETVAL
+
+void
+set_kernel_type (SV *self, long val)
+CODE:
+  ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->kernel_type = val;
+
+long
+get_kernel_type (SV *self)
+CODE:
+  RETVAL = ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->kernel_type;
+OUTPUT:
+  RETVAL
+
+void
+set_poly_degree (SV *self, long val)
+CODE:
+  ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->poly_degree = val;
+
+long
+get_poly_degree (SV *self)
+CODE:
+  RETVAL = ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->poly_degree;
+OUTPUT:
+  RETVAL
+
+void
+set_rbf_gamma (SV *self, double val)
+CODE:
+  ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->rbf_gamma = val;
+
+double
+get_rbf_gamma (SV *self)
+CODE:
+  RETVAL = ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->rbf_gamma;
+OUTPUT:
+  RETVAL
+
+/* A couple special cases for strings */
 
 void
 set_predfile (SV *self, char *predfile)
@@ -480,37 +673,10 @@ CODE:
   strncpy(learn_parm->alphafile, alphafile, sizeof(learn_parm->alphafile)-1);
   learn_parm->alphafile[sizeof(learn_parm->alphafile)-1] = '\0';
 
-
- /* kernel_parm setting stuff */
-
-void
-set_kernel_type (SV *self, long kernel_type)
-CODE:
-  ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->kernel_type = kernel_type;
-
-void
-set_poly_degree (SV *self, long poly_degree)
-CODE:
-  ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->poly_degree = poly_degree;
-
-void
-set_rbf_gamma (SV *self, double rbf_gamma)
-CODE:
-  ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->rbf_gamma = rbf_gamma;
-
-void
-set_coef_lin (SV *self, double coef_lin)
-CODE:
-  ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->coef_lin = coef_lin;
-
-void
-set_coef_const (SV *self, double coef_const)
-CODE:
-  ((KERNEL_PARM*) self_fetch(self, "_kernel_parm"))->coef_const = coef_const;
-
 void
 set_custom (SV *self, char *custom)
 CODE:
   KERNEL_PARM *kernel_parm = (KERNEL_PARM*) self_fetch(self, "_kernel_parm");
   strncpy(kernel_parm->custom, custom, sizeof(kernel_parm->custom)-1);
   kernel_parm->custom[sizeof(kernel_parm->custom)-1] = '\0';
+

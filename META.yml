@@ -1,10 +1,9 @@
---- #YAML:1.0
+---
 name: Algorithm-SVMLight
-version: 0.03
+version: 0.04
 author:
-  - Ken Williams, E<lt>kwilliams@cpan.orgE<gt>
-abstract: |-
-  Perl interface to SVMLight Machine-Learning Package
+  - 'Ken Williams, E<lt>kwilliams@cpan.orgE<gt>'
+abstract: Perl interface to SVMLight Machine-Learning Package
 license: perl
 resources:
   license: http://dev.perl.org/licenses/
@@ -14,9 +13,8 @@ build_requires:
 provides:
   Algorithm::SVMLight:
     file: lib/Algorithm/SVMLight.pm
-    version: 0.03
-generated_by: Module::Build version 0.2703
+    version: 0.04
+generated_by: Module::Build version 0.271
 meta-spec:
-  url: |-
-    http://module-build.sourceforge.net/META-spec-v1.2.html
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
   version: 1.2

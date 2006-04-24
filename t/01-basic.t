@@ -1,7 +1,7 @@
 
 use strict;
 use vars qw($TODO);
-use Test::More tests => 22;
+use Test::More tests => 25;
 BEGIN { use_ok('Algorithm::SVMLight') };
 
 use File::Spec;
@@ -83,6 +83,18 @@ EOF
   is ($s->num_instances, 3, "Three documents read");
   is ($s->num_features, 9284, "9284 vocab elements");
 }
+
+{
+  # Test constructor parameters
+  my $s = Algorithm::SVMLight->new(type => 3, # Ranking
+				   kernel_type => 2, # RBF
+				   rbf_gamma => 2, 
+				  );
+  is $s->get_type, 3;
+  is $s->get_kernel_type, 2;
+  is $s->get_rbf_gamma, 2;
+}
+
 
 ######################################
 sub _hash { my %h; $h{$_}++ for @_; \%h }
