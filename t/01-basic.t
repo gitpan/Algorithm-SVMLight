@@ -1,7 +1,7 @@
 
 use strict;
 use vars qw($TODO);
-use Test::More tests => 25;
+use Test::More tests => 27;
 BEGIN { use_ok('Algorithm::SVMLight') };
 
 use File::Spec;
@@ -30,6 +30,24 @@ ok -e $model_file, "Write model file";
   is $s2->num_instances, 2, "Two documents";
 }
 
+{
+  # Try again with named features
+  my $s = new Algorithm::SVMLight;
+  $s->add_instance(label => 1,  attributes => {foo => 2.7, bar => 1234});
+  $s->add_instance(label => -1, attributes => {foo => 0.7, duck => -1234, goose => 3.5});
+  my $features = $s->{features};
+
+  $s->train;
+
+  1 while unlink $model_file;
+  $s->write_model($model_file);
+  ok -e $model_file, "Write model file";
+
+  # See whether we can read our written file
+  my $s2 = new Algorithm::SVMLight;
+  $s2->read_model($model_file);
+  is_deeply $s2->{features}, $s->{features}, "Feature indices should be preserved";
+}
 
 {
   # Test add_instance

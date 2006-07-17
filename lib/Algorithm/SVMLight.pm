@@ -5,7 +5,7 @@ use DynaLoader ();
 
 use vars qw($VERSION @ISA);
 
-$VERSION = '0.04';
+$VERSION = '0.05';
 @ISA = qw(DynaLoader);
 __PACKAGE__->bootstrap( $VERSION );
 
@@ -123,6 +123,41 @@ sub add_instance {
   $self->add_instance_i($params{label}, "", \@indices, \@values);
 }
 
+sub write_model {
+  my ($self, $file) = @_;
+  $self->_write_model($file);
+
+  # Write a footer line
+  if ( my $numf = keys %{ $self->{features} } ) {
+    open my($fh), ">> $file" or die "Can't write footer to $file: $!";
+    print $fh ('#rfeatures: [undef, ' ,
+	       join( ', ', map _escape($self->{rfeatures}[$_]), 1..$numf ),
+	       "]\n");
+  }
+}
+
+sub read_model {
+  my ($self, $file) = @_;
+  $self->_read_model($file);
+
+  # Read the footer line
+  open my($fh), $file or die "Can't read $file: $!";
+  local $_;
+  while (<$fh>) {
+    next unless /^#rfeatures: (\[.*\])$/;
+    my $rf = $self->{rfeatures} = eval $1;
+    die $@ if $@;
+    $self->{features} = { map {$rf->[$_], $_} 1..$#$rf };
+  }
+}
+
+sub _escape {
+  local $_ = shift;
+  s/([\\'])/\\$1/g;
+  s/\n/\\n/g;
+  s/\r/\\r/g;
+  return "'$_'";
+}
 
 1;
 __END__
