@@ -1,6 +1,7 @@
 Build.PL
 Changes
 INSTALL
+lib/Algorithm/param_set.c.PL
 lib/Algorithm/SVMLight.pm
 lib/Algorithm/SVMLight.xs
 Makefile.PL
