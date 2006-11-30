@@ -5,7 +5,7 @@ use DynaLoader ();
 
 use vars qw($VERSION @ISA);
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 @ISA = qw(DynaLoader);
 __PACKAGE__->bootstrap( $VERSION );
 
@@ -120,7 +120,8 @@ sub add_instance {
   }
 
   #warn "Adding document: (@indices), (@values) => $params{label}\n";
-  $self->add_instance_i($params{label}, "", \@indices, \@values);
+  my $id = exists $params{query_id} ? $params{query_id} : 0;
+  $self->add_instance_i($params{label}, "", \@indices, \@values, $id);
 }
 
 sub write_model {
@@ -303,6 +304,10 @@ All training instances share the same attribute-space; if an attribute
 is unspecified for a certain instance, it is equivalent to specifying
 a value of zero.  Typically you can save a lot of memory (and
 potentially training time) by omitting zero-valued attributes.
+
+When using a ranking SVM, you may also pass a C<query_id> parameter,
+whose integer value will identify the group of instances in which this
+instance belongs for ranking purposes.
 
 =item add_instance_i($label, $name, \@indices, \@values)
 

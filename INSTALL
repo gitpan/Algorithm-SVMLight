@@ -2,9 +2,15 @@
 
 In order to install this module, you must first install the core
 SVMLight software, including the modifications in the SVMLight.patch
-file (included with the Algorithm::SVMLight distribution).  This will
-provide a "libsvmlight.a" library (or whatever the equivalent filename
-is on your system against which the perl module will be linked.  
+file (included with the Algorithm::SVMLight distribution):
+
+   # From the directory with SVMLight's sources:
+   patch -p0 < SVMLight.patch
+   make
+
+This will provide a "libsvmlight.a" library (or whatever the
+equivalent filename is on your system) against which the perl module
+will be linked.
 
 After installing the core SVMLight software, follow the standard
 procedure for installing Module::Build-based perl modules:

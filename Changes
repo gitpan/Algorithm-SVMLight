@@ -1,5 +1,9 @@
 Revision history for Perl extension Algorithm::SVMLight.
 
+0.06  Thu Nov 30 13:42:45 CST 2006
+
+ - Added a 'query_id' parameter to add_instance() for ranking SVMs.
+
 0.05  Mon Jul 17 15:25:50 CDT 2006
 
  - The mapping between feature names and feature indices (the internal
