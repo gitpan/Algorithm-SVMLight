@@ -1,5 +1,21 @@
 Revision history for Perl extension Algorithm::SVMLight.
 
+0.08  Mon Jan  7 15:53:51 CST 2008
+
+ - Changed the INSTALL file into a README file with better
+   installation instructions.
+
+ - Added the ability to use a customizable Perl cost function when
+   learning a ranking SVM.
+
+ - Fixed a comment in param_set.c.PL that was causing some warnings.
+
+ - Added an explicit typecast in SVMLight.xs to silence some compiler
+   warnings.
+
+ - Changed VERSION to SVMLIGHT_VERSION in the patch file, to avoid
+   conflicts with perl's VERSION macro in the XS file.
+
 0.07  Thu Nov 30 13:58:24 CST 2006
 
  - Forgot to include the param_set.c.PL file, which meant people

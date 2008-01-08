@@ -73,8 +73,8 @@ OUTPUT:
 EOF
 }
 
+# A couple special cases for strings
 print <<'EOF'
-/* A couple special cases for strings */
 
 void
 set_predfile (SV *self, char *predfile)

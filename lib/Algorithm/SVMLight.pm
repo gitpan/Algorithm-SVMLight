@@ -5,7 +5,7 @@ use DynaLoader ();
 
 use vars qw($VERSION @ISA);
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 @ISA = qw(DynaLoader);
 __PACKAGE__->bootstrap( $VERSION );
 
@@ -212,8 +212,8 @@ represent some of the best-performing Machine Learning approaches in
 domains such as text categorization, image recognition, bioinformatics
 string processing, and others.
 
-The underlying SVMLight engine deals with features as integers, not
-strings.  Since features are commonly thought of as strings (e.g. the
+For efficiency reasons, the underlying SVMLight engine indexes features by integers, not
+strings.  Since features are commonly thought of by name (e.g. the
 words in a document, or mnemonic representations of engineered
 features), we provide in C<Algorithm::SVMLight> a simple mechanism for
 mapping back and forth between feature names (strings) and feature
@@ -224,7 +224,7 @@ methods.
 
 =head1 INSTALLATION
 
-For installation instructions, please see the F<INSTALL> file included
+For installation instructions, please see the F<README> file included
 with this distribution.
 
 =head1 METHODS
@@ -330,6 +330,20 @@ organize a collection of training data into SVMLight's standard
 import the data.  Under the hood, this calls SVMLight's
 C<read_documents()> C function.  When it's convenient for you to
 organize the data in this manner, you may see speed improvements.
+
+=item ranking_callback(\&function)
+
+When using a ranking SVM, it is possible to customize the cost of
+ranking each pair of instances incorrectly by supplying a custom Perl
+callback function.
+
+For two instances C<i> and C<j>, the custom function will receive four
+arguments: the C<rankvalue> of instance C<i> and C<j>, and the
+C<costfactor> of instance C<i> and C<j>.  It should return a real
+number indicating the cost.
+
+By default, SVMLight will use an internal C function assigning a cost
+of the average of the C<costfactor>s for the two instances.
 
 =item train()
 

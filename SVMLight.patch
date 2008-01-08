@@ -1,6 +1,215 @@
---- svm_common.h	Fri Sep  3 14:22:55 2004
-+++ svm_common.h	Fri Jul  8 16:16:54 2005
-@@ -284,6 +284,8 @@
+diff -ur svm_light/Makefile svm_light-new/Makefile
+--- svm_light/Makefile	2004-09-03 15:56:45.000000000 -0500
++++ svm_light-new/Makefile	2007-01-30 17:38:41.000000000 -0600
+@@ -12,9 +12,14 @@
+ LD=gcc                          # used linker
+ LFLAGS=-O3                      # linker flags
+ LIBS=-L. -lm                    # used libraries
++RANLIB=ranlib
+ 
+ 
+-all: svm_learn_hideo svm_classify
++all: svm_learn_hideo svm_classify libsvmlight.a
++
++libsvmlight.a: svm_learn.o svm_common.o svm_hideo.o
++	$(AR) r $@ $^
++	$(RANLIB) $@
+ 
+ tidy: 
+ 	rm -f *.o 
+Only in svm_light-new: example1
+Only in svm_light-new: example1.tar.gz
+Only in svm_light-new: libsvmlight.a
+diff -ur svm_light/svm_classify.c svm_light-new/svm_classify.c
+--- svm_light/svm_classify.c	2004-07-14 13:50:00.000000000 -0500
++++ svm_light-new/svm_classify.c	2007-01-31 12:07:39.000000000 -0600
+@@ -78,19 +78,20 @@
+ 	if((words[j]).wnum>model->totwords) /* are not larger than in     */
+ 	  (words[j]).wnum=0;               /* model. Remove feature if   */
+       }                                        /* necessary.                 */
+-      doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
+-      t1=get_runtime();
++    }
++    doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
++    t1=get_runtime();
++
++    if(model->kernel_parm.kernel_type == 0) {   /* linear kernel */
+       dist=classify_example_linear(model,doc);
+-      runtime+=(get_runtime()-t1);
+-      free_example(doc,1);
+     }
+     else {                             /* non-linear kernel */
+-      doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
+-      t1=get_runtime();
+       dist=classify_example(model,doc);
+-      runtime+=(get_runtime()-t1);
+-      free_example(doc,1);
+     }
++
++    runtime+=(get_runtime()-t1);
++    free_example(doc,1);
++    
+     if(dist>0) {
+       if(pred_format==0) { /* old weired output format */
+ 	fprintf(predfl,"%.8g:+1 %.8g:-1\n",dist,-dist);
+@@ -181,7 +182,7 @@
+ 
+ void print_help(void)
+ {
+-  printf("\nSVM-light %s: Support Vector Machine, classification module     %s\n",VERSION,VERSION_DATE);
++  printf("\nSVM-light %s: Support Vector Machine, classification module     %s\n",SVMLIGHT_VERSION,SVMLIGHT_VERSION_DATE);
+   copyright_notice();
+   printf("   usage: svm_classify [options] example_file model_file output_file\n\n");
+   printf("options: -h         -> this help\n");
+diff -ur svm_light/svm_common.c svm_light-new/svm_common.c
+--- svm_light/svm_common.c	2004-08-27 17:05:25.000000000 -0500
++++ svm_light-new/svm_common.c	2008-01-03 10:37:46.000000000 -0600
+@@ -527,7 +527,7 @@
+   }
+   if ((modelfl = fopen (modelfile, "w")) == NULL)
+   { perror (modelfile); exit (1); }
+-  fprintf(modelfl,"SVM-light Version %s\n",VERSION);
++  fprintf(modelfl,"SVM-light Version %s\n",SVMLIGHT_VERSION);
+   fprintf(modelfl,"%ld # kernel type\n",
+ 	  model->kernel_parm.kernel_type);
+   fprintf(modelfl,"%ld # kernel parameter -d \n",
+@@ -598,7 +598,7 @@
+   { perror (modelfile); exit (1); }
+ 
+   fscanf(modelfl,"SVM-light Version %s\n",version_buffer);
+-  if(strcmp(version_buffer,VERSION)) {
++  if(strcmp(version_buffer,SVMLIGHT_VERSION)) {
+     perror ("Version of model-file does not match version of svm_classify!"); 
+     exit (1); 
+   }
+@@ -887,6 +887,103 @@
+   return(alpha);
+ }
+ 
++double costfunc(DOC **docs, double *rankvalue, long i, long j, LEARN_PARM *custom) {
++  return (docs[i]->costfactor+docs[j]->costfactor)/2.0;
++}
++
++void set_learning_defaults(LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm)
++{
++  learn_parm->type=CLASSIFICATION;
++  strcpy (learn_parm->predfile, "trans_predictions");
++  strcpy (learn_parm->alphafile, "");
++  learn_parm->biased_hyperplane=1;
++  learn_parm->sharedslack=0;
++  learn_parm->remove_inconsistent=0;
++  learn_parm->skip_final_opt_check=0;
++  learn_parm->svm_maxqpsize=10;
++  learn_parm->svm_newvarsinqp=0;
++  learn_parm->svm_iter_to_shrink=2;
++  learn_parm->maxiter=100000;
++  learn_parm->kernel_cache_size=40;
++  learn_parm->svm_c=0.0;
++  learn_parm->eps=0.1;
++  learn_parm->transduction_posratio=-1.0;
++  learn_parm->svm_costratio=1.0;
++  learn_parm->svm_costratio_unlab=1.0;
++  learn_parm->svm_unlabbound=1E-5;
++  learn_parm->epsilon_crit=0.001;
++  learn_parm->epsilon_a=1E-15;
++  learn_parm->compute_loo=0;
++  learn_parm->rho=1.0;
++  learn_parm->xa_depth=0;
++  learn_parm->costfunc=&costfunc;
++  learn_parm->costfunccustom=NULL;
++
++  kernel_parm->kernel_type=LINEAR;
++  kernel_parm->poly_degree=3;
++  kernel_parm->rbf_gamma=1.0;
++  kernel_parm->coef_lin=1;
++  kernel_parm->coef_const=1;
++  strcpy(kernel_parm->custom,"empty");
++}
++
++int check_learning_parms(LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm)
++{
++  if((learn_parm->skip_final_opt_check) 
++     && (kernel_parm->kernel_type == LINEAR)) {
++    printf("\nIt does not make sense to skip the final optimality check for linear kernels.\n\n");
++    learn_parm->skip_final_opt_check=0;
++  }    
++  if((learn_parm->skip_final_opt_check) 
++     && (learn_parm->remove_inconsistent)) {
++    printf("\nIt is necessary to do the final optimality check when removing inconsistent \nexamples.\n");
++    return 0;
++  }    
++  if((learn_parm->svm_maxqpsize<2)) {
++    printf("\nMaximum size of QP-subproblems not in valid range: %ld [2..]\n",learn_parm->svm_maxqpsize); 
++    return 0;
++  }
++  if((learn_parm->svm_maxqpsize<learn_parm->svm_newvarsinqp)) {
++    printf("\nMaximum size of QP-subproblems [%ld] must be larger than the number of\n",learn_parm->svm_maxqpsize); 
++    printf("new variables [%ld] entering the working set in each iteration.\n",learn_parm->svm_newvarsinqp); 
++    return 0;
++  }
++  if(learn_parm->svm_iter_to_shrink<1) {
++    printf("\nMaximum number of iterations for shrinking not in valid range: %ld [1,..]\n",learn_parm->svm_iter_to_shrink);
++    return 0;
++  }
++  if(learn_parm->svm_c<0) {
++    printf("\nThe C parameter must be greater than zero!\n\n");
++    return 0;
++  }
++  if(learn_parm->transduction_posratio>1) {
++    printf("\nThe fraction of unlabeled examples to classify as positives must\n");
++    printf("be less than 1.0 !!!\n\n");
++    return 0;
++  }
++  if(learn_parm->svm_costratio<=0) {
++    printf("\nThe COSTRATIO parameter must be greater than zero!\n\n");
++    return 0;
++  }
++  if(learn_parm->epsilon_crit<=0) {
++    printf("\nThe epsilon parameter must be greater than zero!\n\n");
++    return 0;
++  }
++  if(learn_parm->rho<0) {
++    printf("\nThe parameter rho for xi/alpha-estimates and leave-one-out pruning must\n");
++    printf("be greater than zero (typically 1.0 or 2.0, see T. Joachims, Estimating the\n");
++    printf("Generalization Performance of an SVM Efficiently, ICML, 2000.)!\n\n");
++    return 0;
++  }
++  if((learn_parm->xa_depth<0) || (learn_parm->xa_depth>100)) {
++    printf("\nThe parameter depth for ext. xi/alpha-estimates must be in [0..100] (zero\n");
++    printf("for switching to the conventional xa/estimates described in T. Joachims,\n");
++    printf("Estimating the Generalization Performance of an SVM Efficiently, ICML, 2000.)\n");
++    return 0;
++  }
++  return 1;
++}
++
+ void nol_ll(char *file, long int *nol, long int *wol, long int *ll) 
+      /* Grep through file and count number of lines, maximum number of
+         spaces per line, and longest line. */
+diff -ur svm_light/svm_common.h svm_light-new/svm_common.h
+--- svm_light/svm_common.h	2004-09-03 14:22:55.000000000 -0500
++++ svm_light-new/svm_common.h	2008-01-03 10:36:43.000000000 -0600
+@@ -31,8 +31,8 @@
+ # include <time.h> 
+ # include <float.h>
+ 
+-# define VERSION       "V6.01"
+-# define VERSION_DATE  "01.09.04"
++# define SVMLIGHT_VERSION       "V6.01"
++# define SVMLIGHT_VERSION_DATE  "01.09.04"
+ 
+ # define CFLOAT  float       /* the type of float to use for caching */
+                              /* kernel evaluations. Using float saves */
+@@ -179,6 +179,8 @@
+   double svm_unlabbound;
+   double *svm_cost;            /* individual upper bounds for each var */
+   long   totwords;             /* number of features */
++  double (*costfunc)(DOC **, double *, long, long, struct learn_parm *);
++  void   *costfunccustom;
+ } LEARN_PARM;
+ 
+ typedef struct kernel_parm {
+@@ -284,6 +286,8 @@
  void   read_documents(char *, DOC ***, double **, long *, long *);
  int    parse_document(char *, WORD *, double *, long *, long *, double *, long *, long, char **);
  double *read_alphas(char *,long);
@@ -9,8 +218,33 @@
  void   nol_ll(char *, long *, long *, long *);
  long   minl(long, long);
  long   maxl(long, long);
---- svm_learn_main.c	Wed Aug 25 19:03:59 2004
-+++ svm_learn_main.c	Fri Jul  8 16:17:30 2005
+diff -ur svm_light/svm_learn.c svm_light-new/svm_learn.c
+--- svm_light/svm_learn.c	2004-08-27 16:56:21.000000000 -0500
++++ svm_light-new/svm_learn.c	2008-01-02 16:18:12.000000000 -0600
+@@ -741,7 +741,8 @@
+   for(i=0;i<totdoc;i++) {
+     for(j=i+1;j<totdoc;j++) {
+       if(docs[i]->queryid == docs[j]->queryid) {
+-	cost=(docs[i]->costfactor+docs[j]->costfactor)/2.0;
++	cost=learn_parm->costfunc(docs, rankvalue, i, j, learn_parm);
++
+ 	if(rankvalue[i] > rankvalue[j]) {
+ 	  if(kernel_parm->kernel_type == LINEAR)
+ 	    docdiff[k]=create_example(k,0,0,cost,
+@@ -2193,7 +2194,7 @@
+       qp->opt_g0[i]-=(kernel_temp*a[kj]*(double)label[kj]);
+       qp->opt_g0[j]-=(kernel_temp*a[ki]*(double)label[ki]); 
+       /* compute quadratic part of objective function */
+-      qp->opt_g[varnum*i+j]=(double)label[ki]*(double)label[kj]*kernel_temp;
++      qp->opt_g[varnum*i+j]=
+       qp->opt_g[varnum*j+i]=(double)label[ki]*(double)label[kj]*kernel_temp;
+     }
+ 
+Only in svm_light-new: svm_learn.c.orig
+Only in svm_light-new: svm_learn.c.rej
+diff -ur svm_light/svm_learn_main.c svm_light-new/svm_learn_main.c
+--- svm_light/svm_learn_main.c	2004-08-25 19:03:59.000000000 -0500
++++ svm_light-new/svm_learn_main.c	2007-01-31 12:07:55.000000000 -0600
 @@ -109,38 +109,12 @@
    
    /* set default */
@@ -129,152 +363,12 @@
      wait_any_key();
      print_help();
      exit(0);
---- svm_classify.c	Wed Jul 14 13:50:00 2004
-+++ svm_classify.c	Mon Aug  8 15:22:55 2005
-@@ -78,19 +78,20 @@
- 	if((words[j]).wnum>model->totwords) /* are not larger than in     */
- 	  (words[j]).wnum=0;               /* model. Remove feature if   */
-       }                                        /* necessary.                 */
--      doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
--      t1=get_runtime();
-+    }
-+    doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
-+    t1=get_runtime();
-+
-+    if(model->kernel_parm.kernel_type == 0) {   /* linear kernel */
-       dist=classify_example_linear(model,doc);
--      runtime+=(get_runtime()-t1);
--      free_example(doc,1);
-     }
-     else {                             /* non-linear kernel */
--      doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
--      t1=get_runtime();
-       dist=classify_example(model,doc);
--      runtime+=(get_runtime()-t1);
--      free_example(doc,1);
-     }
-+
-+    runtime+=(get_runtime()-t1);
-+    free_example(doc,1);
-+    
-     if(dist>0) {
-       if(pred_format==0) { /* old weired output format */
- 	fprintf(predfl,"%.8g:+1 %.8g:-1\n",dist,-dist);
---- svm_common.c	Fri Aug 27 17:05:25 2004
-+++ svm_common.c	Wed Sep  7 15:51:52 2005
-@@ -887,6 +887,97 @@
-   return(alpha);
- }
+@@ -297,7 +205,7 @@
  
-+void set_learning_defaults(LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm)
-+{
-+  learn_parm->type=CLASSIFICATION;
-+  strcpy (learn_parm->predfile, "trans_predictions");
-+  strcpy (learn_parm->alphafile, "");
-+  learn_parm->biased_hyperplane=1;
-+  learn_parm->sharedslack=0;
-+  learn_parm->remove_inconsistent=0;
-+  learn_parm->skip_final_opt_check=0;
-+  learn_parm->svm_maxqpsize=10;
-+  learn_parm->svm_newvarsinqp=0;
-+  learn_parm->svm_iter_to_shrink=2;
-+  learn_parm->maxiter=100000;
-+  learn_parm->kernel_cache_size=40;
-+  learn_parm->svm_c=0.0;
-+  learn_parm->eps=0.1;
-+  learn_parm->transduction_posratio=-1.0;
-+  learn_parm->svm_costratio=1.0;
-+  learn_parm->svm_costratio_unlab=1.0;
-+  learn_parm->svm_unlabbound=1E-5;
-+  learn_parm->epsilon_crit=0.001;
-+  learn_parm->epsilon_a=1E-15;
-+  learn_parm->compute_loo=0;
-+  learn_parm->rho=1.0;
-+  learn_parm->xa_depth=0;
-+
-+  kernel_parm->kernel_type=LINEAR;
-+  kernel_parm->poly_degree=3;
-+  kernel_parm->rbf_gamma=1.0;
-+  kernel_parm->coef_lin=1;
-+  kernel_parm->coef_const=1;
-+  strcpy(kernel_parm->custom,"empty");
-+}
-+
-+int check_learning_parms(LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm)
-+{
-+  if((learn_parm->skip_final_opt_check) 
-+     && (kernel_parm->kernel_type == LINEAR)) {
-+    printf("\nIt does not make sense to skip the final optimality check for linear kernels.\n\n");
-+    learn_parm->skip_final_opt_check=0;
-+  }    
-+  if((learn_parm->skip_final_opt_check) 
-+     && (learn_parm->remove_inconsistent)) {
-+    printf("\nIt is necessary to do the final optimality check when removing inconsistent \nexamples.\n");
-+    return 0;
-+  }    
-+  if((learn_parm->svm_maxqpsize<2)) {
-+    printf("\nMaximum size of QP-subproblems not in valid range: %ld [2..]\n",learn_parm->svm_maxqpsize); 
-+    return 0;
-+  }
-+  if((learn_parm->svm_maxqpsize<learn_parm->svm_newvarsinqp)) {
-+    printf("\nMaximum size of QP-subproblems [%ld] must be larger than the number of\n",learn_parm->svm_maxqpsize); 
-+    printf("new variables [%ld] entering the working set in each iteration.\n",learn_parm->svm_newvarsinqp); 
-+    return 0;
-+  }
-+  if(learn_parm->svm_iter_to_shrink<1) {
-+    printf("\nMaximum number of iterations for shrinking not in valid range: %ld [1,..]\n",learn_parm->svm_iter_to_shrink);
-+    return 0;
-+  }
-+  if(learn_parm->svm_c<0) {
-+    printf("\nThe C parameter must be greater than zero!\n\n");
-+    return 0;
-+  }
-+  if(learn_parm->transduction_posratio>1) {
-+    printf("\nThe fraction of unlabeled examples to classify as positives must\n");
-+    printf("be less than 1.0 !!!\n\n");
-+    return 0;
-+  }
-+  if(learn_parm->svm_costratio<=0) {
-+    printf("\nThe COSTRATIO parameter must be greater than zero!\n\n");
-+    return 0;
-+  }
-+  if(learn_parm->epsilon_crit<=0) {
-+    printf("\nThe epsilon parameter must be greater than zero!\n\n");
-+    return 0;
-+  }
-+  if(learn_parm->rho<0) {
-+    printf("\nThe parameter rho for xi/alpha-estimates and leave-one-out pruning must\n");
-+    printf("be greater than zero (typically 1.0 or 2.0, see T. Joachims, Estimating the\n");
-+    printf("Generalization Performance of an SVM Efficiently, ICML, 2000.)!\n\n");
-+    return 0;
-+  }
-+  if((learn_parm->xa_depth<0) || (learn_parm->xa_depth>100)) {
-+    printf("\nThe parameter depth for ext. xi/alpha-estimates must be in [0..100] (zero\n");
-+    printf("for switching to the conventional xa/estimates described in T. Joachims,\n");
-+    printf("Estimating the Generalization Performance of an SVM Efficiently, ICML, 2000.)\n");
-+    return 0;
-+  }
-+  return 1;
-+}
-+
- void nol_ll(char *file, long int *nol, long int *wol, long int *ll) 
-      /* Grep through file and count number of lines, maximum number of
-         spaces per line, and longest line. */
---- Makefile	Fri Sep  3 15:56:45 2004
-+++ Makefile	Thu Jul  7 14:27:03 2005
-@@ -12,9 +12,14 @@
- LD=gcc                          # used linker
- LFLAGS=-O3                      # linker flags
- LIBS=-L. -lm                    # used libraries
-+RANLIB=ranlib
- 
- 
--all: svm_learn_hideo svm_classify
-+all: svm_learn_hideo svm_classify libsvmlight.a
-+
-+libsvmlight.a: svm_learn.o svm_common.o svm_hideo.o
-+	$(AR) r $@ $^
-+	$(RANLIB) $@
- 
- tidy: 
- 	rm -f *.o 
+ void print_help()
+ {
+-  printf("\nSVM-light %s: Support Vector Machine, learning module     %s\n",VERSION,VERSION_DATE);
++  printf("\nSVM-light %s: Support Vector Machine, learning module     %s\n",SVMLIGHT_VERSION,SVMLIGHT_VERSION_DATE);
+   copyright_notice();
+   printf("   usage: svm_learn [options] example_file model_file\n\n");
+   printf("Arguments:\n");

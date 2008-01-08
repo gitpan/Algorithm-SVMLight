@@ -1,6 +1,6 @@
 ---
 name: Algorithm-SVMLight
-version: 0.07
+version: 0.08
 author:
   - 'Ken Williams, E<lt>kwilliams@cpan.orgE<gt>'
 abstract: Perl interface to SVMLight Machine-Learning Package
@@ -13,8 +13,8 @@ build_requires:
 provides:
   Algorithm::SVMLight:
     file: lib/Algorithm/SVMLight.pm
-    version: 0.07
-generated_by: Module::Build version 0.2805
+    version: 0.08
+generated_by: Module::Build version 0.2808
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
   version: 1.2

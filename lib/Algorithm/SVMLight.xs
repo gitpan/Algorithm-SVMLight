@@ -33,12 +33,47 @@ typedef struct {
   double *labels;
 } corpus;
 
+double ranking_callback(DOC **docs, double *rankvalue, long i, long j, LEARN_PARM *learn_parm) {
+  dSP;
+  SV *callback = (SV *) learn_parm->costfunccustom;
+  int count;
+  double result;
+
+  /* Don't bother checking the type of 'callback' - it could be a CODE
+   * reference or a string, and perl will throw its own error otherwise.
+   */
+
+  ENTER;
+  SAVETMPS;
+
+  PUSHMARK(SP);
+  XPUSHs(sv_2mortal(newSVnv(rankvalue[i])));
+  XPUSHs(sv_2mortal(newSVnv(rankvalue[j])));
+  XPUSHs(sv_2mortal(newSVnv(docs[i]->costfactor)));
+  XPUSHs(sv_2mortal(newSVnv(docs[j]->costfactor)));
+  PUTBACK ;
+
+  count = call_sv(callback, G_SCALAR);
+  SPAGAIN;
+  if (count != 1)
+    croak("Expected 1 return value from ranking callback, but got %d", count);
+  result = POPn;
+
+  PUTBACK;
+  FREETMPS;
+  LEAVE;
+
+  return result;
+}
+
+
 SV **
 self_store(SV *self, void *ptr, const char *slot, int make_readonly) {
   HV *self_hash = (HV*) SvRV(self);
   SV **fetched = hv_fetch(self_hash, slot, strlen(slot), 1);
   if (fetched == NULL) croak("Couldn't create the %s slot in $self", slot);
   
+  SvREADONLY_off(*fetched);
   sv_setiv(*fetched, (IV) ptr);
   if (make_readonly) SvREADONLY_on(*fetched);
   return fetched;
@@ -140,6 +175,14 @@ CODE:
   check_learning_parms(learn_parm, kernel_parm);
 }
 
+void
+ranking_callback (SV *self, SV *callback)
+CODE:
+{
+  LEARN_PARM *learn_parm = (LEARN_PARM*) self_fetch(self, "_learn_parm");
+  learn_parm->costfunc = &ranking_callback;
+  learn_parm->costfunccustom = newSVsv(callback);
+}
 
 void
 add_instance_i (SV *self, double label, char *name, SV *indices, SV *values, long query_id = 0, long slack_id = 0, double cost_factor = 1.0)
@@ -225,7 +268,7 @@ CODE:
                            kernel_parm,kernel_cache,model,alpha_in);
     break;
   default:
-    croak("Unkown learning type '%d'", learn_parm->type);
+    croak("Unknown learning type '%d'", learn_parm->type);
   }
 
   if (model->kernel_parm.kernel_type == 0) { /* linear kernel */
@@ -298,7 +341,7 @@ CODE:
     av_push(result, newSVnv(m->lin_weights[i]));
   }
 
-  RETVAL = newRV_noinc(result);
+  RETVAL = newRV_noinc((SV*) result);
 }
 OUTPUT:
   RETVAL
