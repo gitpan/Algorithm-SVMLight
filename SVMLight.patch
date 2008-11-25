@@ -1,37 +1,149 @@
-diff -ur svm_light/Makefile svm_light-new/Makefile
---- svm_light/Makefile	2004-09-03 15:56:45.000000000 -0500
-+++ svm_light-new/Makefile	2007-01-30 17:38:41.000000000 -0600
-@@ -12,9 +12,14 @@
- LD=gcc                          # used linker
- LFLAGS=-O3                      # linker flags
- LIBS=-L. -lm                    # used libraries
+diff -urb svm_light/Makefile svm_light-new/Makefile
+--- svm_light/Makefile	2008-10-08 14:38:53.000000000 -0500
++++ svm_light-new/Makefile	2008-11-18 14:06:33.000000000 -0600
+@@ -16,17 +16,25 @@
+ #CFLAGS= $(SFLAGS) -pg -Wall -pedantic      # debugging C-Compiler flags
+ #LFLAGS= $(SFLAGS) -pg                      # debugging linker flags
+ LIBS=-L. -lm                               # used libraries
 +RANLIB=ranlib
  
- 
 -all: svm_learn_hideo svm_classify
-+all: svm_learn_hideo svm_classify libsvmlight.a
++OPTIM=hideo
 +
-+libsvmlight.a: svm_learn.o svm_common.o svm_hideo.o
++all: svm_learn svm_classify libsvmlight.a libsvmlight.so
++
++libsvmlight.a: svm_learn.o svm_common.o svm_$(OPTIM).o
 +	$(AR) r $@ $^
 +	$(RANLIB) $@
  
  tidy: 
- 	rm -f *.o 
-Only in svm_light-new: example1
-Only in svm_light-new: example1.tar.gz
-Only in svm_light-new: libsvmlight.a
-diff -ur svm_light/svm_classify.c svm_light-new/svm_classify.c
---- svm_light/svm_classify.c	2004-07-14 13:50:00.000000000 -0500
-+++ svm_light-new/svm_classify.c	2007-01-31 12:07:39.000000000 -0600
+-	rm -f *.o 
+-	rm -f pr_loqo/*.o
++	$(RM) *.o 
++	$(RM) pr_loqo/*.o
+ 
+ clean:	tidy
+-	rm -f svm_learn
+-	rm -f svm_classify
+-	rm -f libsvmlight.so
++	$(RM) svm_learn
++	$(RM) svm_classify
++	$(RM) libsvmlight.so
++	$(RM) libsvmlight.a
+ 
+ help:   info
+ 
+@@ -34,72 +42,63 @@
+ 	@echo
+ 	@echo "make for SVM-light               Thorsten Joachims, 1998"
+ 	@echo
+-	@echo "Thanks to Ralf Herbrich for the initial version."
++	@echo "Thanks to Ralf Herbrich for the initial version of the Makefile."
+ 	@echo 
+-	@echo "USAGE: make [svm_learn | svm_learn_loqo | svm_learn_hideo | "
+-	@echo "             libsvmlight_hideo | libsvmlight_loqo | "
+-	@echo "             svm_classify | all | clean | tidy]"
+-	@echo 
+-	@echo "    svm_learn           builds the learning module (prefers HIDEO)"
+-	@echo "    svm_learn_hideo     builds the learning module using HIDEO optimizer"
+-	@echo "    svm_learn_loqo      builds the learning module using PR_LOQO optimizer"
++	@echo "USAGE: make [svm_learn | svm_classify | libsvmlight.so | libsvmlight.a "
++	@echo "             all | clean | tidy] [OPTIM=loqo]"
++	@echo 
++	@echo "    svm_learn           builds the learning module"
+ 	@echo "    svm_classify        builds the classfication module"
+-	@echo "    libsvmlight_hideo   builds shared object library that can be linked into"
+-	@echo "                        other code using HIDEO"
+-	@echo "    libsvmlight_loqo    builds shared object library that can be linked into"
+-	@echo "                        other code using PR_LOQO"
++	@echo "    libsvmlight.so      builds shared object library that can be linked into"
++	@echo "                        other code"
++	@echo "    libsvmlight.a       builds object library that can be linked into"
++	@echo "                        other code"
+ 	@echo "    all (default)       builds svm_learn + svm_classify"
+ 	@echo "    clean               removes .o and target files"
+ 	@echo "    tidy                removes .o files"
+ 	@echo
++	@echo "    OPTIM=loqo          use the PR_LOQO optimizer (default is HIDEO)"
++	@echo
+ 
+ # Create executables svm_learn and svm_classify
+ 
+-svm_learn_hideo: svm_learn_main.o svm_learn.o svm_common.o svm_hideo.o 
+-	$(LD) $(LFLAGS) svm_learn_main.o svm_learn.o svm_common.o svm_hideo.o -o svm_learn $(LIBS)
++ifeq ($(OPTIM),loqo)
++  loqoobj=pr_loqo/pr_loqo.o
++endif
+ 
+-#svm_learn_loqo: svm_learn_main.o svm_learn.o svm_common.o svm_loqo.o loqo
+-#	$(LD) $(LFLAGS) svm_learn_main.o svm_learn.o svm_common.o svm_loqo.o pr_loqo/pr_loqo.o -o svm_learn $(LIBS)
++svm_learn: svm_learn_main.o svm_learn.o svm_common.o svm_$(OPTIM).o $(loqoobj)
++	$(LD) $(LFLAGS) $^ -o $@ $(LIBS)
+ 
+ svm_classify: svm_classify.o svm_common.o 
+-	$(LD) $(LFLAGS) svm_classify.o svm_common.o -o svm_classify $(LIBS)
++	$(LD) $(LFLAGS) $^ -o $@ $(LIBS)
+ 
+ 
+ # Create library libsvmlight.so, so that external code can get access to the
+ # learning and classification functions of svm-light by linking this library.
+ 
+-svm_learn_hideo_noexe: svm_learn_main.o svm_learn.o svm_common.o svm_hideo.o 
++svm_learn_noexe: svm_learn_main.o svm_learn.o svm_common.o svm_$(OPTIM).o $(loqoobj)
+ 
+-libsvmlight_hideo: svm_learn_main.o svm_learn.o svm_common.o svm_hideo.o 
+-	$(LD) -shared svm_learn.o svm_common.o svm_hideo.o -o libsvmlight.so
++libsvmlight.so: svm_learn_main.o svm_learn.o svm_common.o svm_$(OPTIM).o $(loqoobj)
++	$(LD) -shared $^ -o $@
+ 
+-#svm_learn_loqo_noexe: svm_learn_main.o svm_learn.o svm_common.o svm_loqo.o loqo
+-
+-#libsvmlight_loqo: svm_learn_main.o svm_learn.o svm_common.o svm_loqo.o 
+-#	$(LD) -shared svm_learn.o svm_common.o svm_loqo.o  pr_loqo/pr_loqo.o -o libsvmlight.so
+ 
+ # Compile components
+ 
+-svm_hideo.o: svm_hideo.c
+-	$(CC) -c $(CFLAGS) svm_hideo.c -o svm_hideo.o 
+-
+-#svm_loqo.o: svm_loqo.c 
+-#	$(CC) -c $(CFLAGS) svm_loqo.c -o svm_loqo.o 
++svm_$(OPTIM).o: svm_$(OPTIM).c
++	$(CC) -c $(CFLAGS) $< -o $@
+ 
+ svm_common.o: svm_common.c svm_common.h kernel.h
+-	$(CC) -c $(CFLAGS) svm_common.c -o svm_common.o 
++	$(CC) -c $(CFLAGS) $< -o $@
+ 
+ svm_learn.o: svm_learn.c svm_common.h
+-	$(CC) -c $(CFLAGS) svm_learn.c -o svm_learn.o 
++	$(CC) -c $(CFLAGS) $< -o $@
+ 
+ svm_learn_main.o: svm_learn_main.c svm_learn.h svm_common.h
+-	$(CC) -c $(CFLAGS) svm_learn_main.c -o svm_learn_main.o 
++	$(CC) -c $(CFLAGS) $< -o $@
+ 
+ svm_classify.o: svm_classify.c svm_common.h kernel.h
+-	$(CC) -c $(CFLAGS) svm_classify.c -o svm_classify.o
+-
+-#loqo: pr_loqo/pr_loqo.o
++	$(CC) -c $(CFLAGS) $< -o $@
+ 
+-#pr_loqo/pr_loqo.o: pr_loqo/pr_loqo.c
+-#	$(CC) -c $(CFLAGS) pr_loqo/pr_loqo.c -o pr_loqo/pr_loqo.o
++pr_loqo/pr_loqo.o: pr_loqo/pr_loqo.c
++	$(CC) -c $(CFLAGS) $< -o $@
+ 
+diff -urb svm_light/svm_classify.c svm_light-new/svm_classify.c
+--- svm_light/svm_classify.c	2008-10-08 14:05:54.000000000 -0500
++++ svm_light-new/svm_classify.c	2008-11-18 14:06:33.000000000 -0600
 @@ -78,19 +78,20 @@
  	if((words[j]).wnum>model->totwords) /* are not larger than in     */
  	  (words[j]).wnum=0;               /* model. Remove feature if   */
        }                                        /* necessary.                 */
--      doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
--      t1=get_runtime();
 +    }
-+    doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
-+    t1=get_runtime();
+       doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
+       t1=get_runtime();
 +
 +    if(model->kernel_parm.kernel_type == 0) {   /* linear kernel */
        dist=classify_example_linear(model,doc);
@@ -42,17 +154,16 @@ diff -ur svm_light/svm_classify.c svm_light-new/svm_classify.c
 -      doc = create_example(-1,0,0,0.0,create_svector(words,comment,1.0));
 -      t1=get_runtime();
        dist=classify_example(model,doc);
--      runtime+=(get_runtime()-t1);
--      free_example(doc,1);
-     }
++    }
 +
-+    runtime+=(get_runtime()-t1);
-+    free_example(doc,1);
+       runtime+=(get_runtime()-t1);
+       free_example(doc,1);
+-    }
 +    
      if(dist>0) {
        if(pred_format==0) { /* old weired output format */
  	fprintf(predfl,"%.8g:+1 %.8g:-1\n",dist,-dist);
-@@ -181,7 +182,7 @@
+@@ -183,7 +184,7 @@
  
  void print_help(void)
  {
@@ -61,9 +172,9 @@ diff -ur svm_light/svm_classify.c svm_light-new/svm_classify.c
    copyright_notice();
    printf("   usage: svm_classify [options] example_file model_file output_file\n\n");
    printf("options: -h         -> this help\n");
-diff -ur svm_light/svm_common.c svm_light-new/svm_common.c
---- svm_light/svm_common.c	2004-08-27 17:05:25.000000000 -0500
-+++ svm_light-new/svm_common.c	2008-01-03 10:37:46.000000000 -0600
+diff -urb svm_light/svm_common.c svm_light-new/svm_common.c
+--- svm_light/svm_common.c	2008-10-08 16:00:35.000000000 -0500
++++ svm_light-new/svm_common.c	2008-11-18 14:06:33.000000000 -0600
 @@ -527,7 +527,7 @@
    }
    if ((modelfl = fopen (modelfile, "w")) == NULL)
@@ -186,17 +297,17 @@ diff -ur svm_light/svm_common.c svm_light-new/svm_common.c
  void nol_ll(char *file, long int *nol, long int *wol, long int *ll) 
       /* Grep through file and count number of lines, maximum number of
          spaces per line, and longest line. */
-diff -ur svm_light/svm_common.h svm_light-new/svm_common.h
---- svm_light/svm_common.h	2004-09-03 14:22:55.000000000 -0500
-+++ svm_light-new/svm_common.h	2008-01-03 10:36:43.000000000 -0600
-@@ -31,8 +31,8 @@
+diff -urb svm_light/svm_common.h svm_light-new/svm_common.h
+--- svm_light/svm_common.h	2008-10-08 15:34:58.000000000 -0500
++++ svm_light-new/svm_common.h	2008-11-18 14:06:33.000000000 -0600
+@@ -27,8 +27,8 @@
  # include <time.h> 
  # include <float.h>
  
--# define VERSION       "V6.01"
--# define VERSION_DATE  "01.09.04"
-+# define SVMLIGHT_VERSION       "V6.01"
-+# define SVMLIGHT_VERSION_DATE  "01.09.04"
+-# define VERSION       "V6.02"
+-# define VERSION_DATE  "14.08.08"
++# define SVMLIGHT_VERSION       "V6.02"
++# define SVMLIGHT_VERSION_DATE  "14.08.08"
  
  # define CFLOAT  float       /* the type of float to use for caching */
                               /* kernel evaluations. Using float saves */
@@ -218,9 +329,9 @@ diff -ur svm_light/svm_common.h svm_light-new/svm_common.h
  void   nol_ll(char *, long *, long *, long *);
  long   minl(long, long);
  long   maxl(long, long);
-diff -ur svm_light/svm_learn.c svm_light-new/svm_learn.c
+diff -urb svm_light/svm_learn.c svm_light-new/svm_learn.c
 --- svm_light/svm_learn.c	2004-08-27 16:56:21.000000000 -0500
-+++ svm_light-new/svm_learn.c	2008-01-02 16:18:12.000000000 -0600
++++ svm_light-new/svm_learn.c	2008-11-18 14:06:33.000000000 -0600
 @@ -741,7 +741,8 @@
    for(i=0;i<totdoc;i++) {
      for(j=i+1;j<totdoc;j++) {
@@ -240,12 +351,10 @@ diff -ur svm_light/svm_learn.c svm_light-new/svm_learn.c
        qp->opt_g[varnum*j+i]=(double)label[ki]*(double)label[kj]*kernel_temp;
      }
  
-Only in svm_light-new: svm_learn.c.orig
-Only in svm_light-new: svm_learn.c.rej
-diff -ur svm_light/svm_learn_main.c svm_light-new/svm_learn_main.c
---- svm_light/svm_learn_main.c	2004-08-25 19:03:59.000000000 -0500
-+++ svm_light-new/svm_learn_main.c	2007-01-31 12:07:55.000000000 -0600
-@@ -109,38 +109,12 @@
+diff -urb svm_light/svm_learn_main.c svm_light-new/svm_learn_main.c
+--- svm_light/svm_learn_main.c	2008-10-08 15:51:38.000000000 -0500
++++ svm_light-new/svm_learn_main.c	2008-11-18 14:06:33.000000000 -0600
+@@ -115,38 +115,12 @@
    
    /* set default */
    strcpy (modelfile, "svm_model");
@@ -286,7 +395,7 @@ diff -ur svm_light/svm_learn_main.c svm_light-new/svm_learn_main.c
    for(i=1;(i<argc) && ((argv[i])[0] == '-');i++) {
      switch ((argv[i])[1]) 
        { 
-@@ -215,74 +189,8 @@
+@@ -221,74 +195,8 @@
      print_help();
      exit(0);
    }    
@@ -363,7 +472,7 @@ diff -ur svm_light/svm_learn_main.c svm_light-new/svm_learn_main.c
      wait_any_key();
      print_help();
      exit(0);
-@@ -297,7 +205,7 @@
+@@ -303,7 +211,7 @@
  
  void print_help()
  {
@@ -372,3 +481,12 @@ diff -ur svm_light/svm_learn_main.c svm_light-new/svm_learn_main.c
    copyright_notice();
    printf("   usage: svm_learn [options] example_file model_file\n\n");
    printf("Arguments:\n");
+@@ -379,7 +287,7 @@
+   wait_any_key();
+   printf("\nMore details in:\n");
+   printf("[1] T. Joachims, Making Large-Scale SVM Learning Practical. Advances in\n");
+-  printf("    Kernel Methods - Support Vector Learning, B. Schölkopf and C. Burges and\n");
++  printf("    Kernel Methods - Support Vector Learning, B. Schlkopf and C. Burges and\n");
+   printf("    A. Smola (ed.), MIT Press, 1999.\n");
+   printf("[2] T. Joachims, Estimating the Generalization performance of an SVM\n");
+   printf("    Efficiently. International Conference on Machine Learning (ICML), 2000.\n");

@@ -9,22 +9,39 @@ Please see the documentation of Algorithm::SVMLight for details on how
 to use the perl interface.
 
 
+DOWNLOADING
+
+The two ingredients you must obtain are the core SVMLight code, and
+the Perl interface:
+
+   http://download.joachims.org/svm_light/v6.02/svm_light.tar.gz
+   http://cpan.org/authors/id/K/KW/KWILLIAMS/Algorithm-SVMLight-0.08.tar.gz
+
+UNPACKING
+
+Put the SVMLight.patch file from Algorithm-SVMLight in the top-level
+directory of the core SVMLight code (note that svm_light.tar.gz is a
+"tar bomb"):
+
+   tar -zxvf Algorithm-SVMLight-0.08.tar.gz
+   mkdir svm_light
+   mv svm_light.tar.gz svm_light
+   cd svm_light
+   tar -zxvf svm_light.tar.gz
+   cp ../Algorithm-SVMLight-0.08/SVMLight.patch .
+
 INSTALLATION
 
-In order to install this module, you must first install the core SVMLight
-code, including the modifications in the SVMLight.patch file (included
-with the Algorithm-SVMLight distribution):
+Apply the SVMLight.patch file, then build svmlight:
 
-   # From the directory with SVMLight's sources:
-   patch -p0 < SVMLight.patch
+   patch -p1 < SVMLight.patch
    make
 
-This will provide a "libsvmlight.a" library (or whatever the
-equivalent filename is on your system) against which the perl module
-will be linked.
+This will provide "libsvmlight.a" and "libsvmlight.so" libraries (or
+whatever the equivalent filenames are on your system), and one of them
+should be able to be used for linking with the perl module.
 
-After installing SVMLight,  the Perl wrapper can be
-installed as follows:
+The Perl wrapper can then be installed as follows:
 
    perl Build.PL
    perl Build
@@ -47,7 +64,7 @@ Test::More (any version), but they are not used after installation.
 
 COPYRIGHT AND LICENCE
 
-The Algorithm-SVMLight perl interface is copyright (C) 2005-2007 Thomson
+The Algorithm-SVMLight perl interface is copyright (C) 2005-2008 Thomson
 Legal & Regulatory, and written by Ken Williams.  It is free software;
 you can redistribute it and/or modify it under the same terms as Perl
 itself.

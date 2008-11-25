@@ -1,5 +1,18 @@
 Revision history for Perl extension Algorithm::SVMLight.
 
+0.09  Tue Nov 25 10:05:46 CST 2008
+
+ - Updated our patch file to account for changes in the latest
+   released version of svmlight.
+
+ - Updated our README to fix a couple mismatches in the
+   instructions. [Spotted by Andreas Koenig]
+
+ - new() will now die if you pass a parameter it doesn't know about.
+   This helps save your skin if you pass "costratio" instead of
+   "svm_costratio", for example, and wonder why it's not having any
+   effect.
+
 0.08  Mon Jan  7 15:53:51 CST 2008
 
  - Changed the INSTALL file into a README file with better

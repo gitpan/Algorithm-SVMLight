@@ -5,7 +5,7 @@ use DynaLoader ();
 
 use vars qw($VERSION @ISA);
 
-$VERSION = '0.08';
+$VERSION = '0.09';
 @ISA = qw(DynaLoader);
 __PACKAGE__->bootstrap( $VERSION );
 
@@ -18,11 +18,11 @@ sub new {
 		    rfeatures => [undef],
 		   }, $package;
   $self->_xs_init;
-  $self->_param_init;
+  $self->_param_init(@_);
   return $self;
 }
 
-my @params = 
+my %params = map {$_,1}
   qw(
      type
      svm_c
@@ -56,11 +56,14 @@ my @params =
 
 
 sub _param_init {
-  my $self = shift;
-  foreach my $param (@params) {
-    if (exists $self->{$param}) {
-      my $method = "set_$param";
-      $self->$method($self->{$param});
+  my ($self, %args) = @_;
+
+  while (my ($k, $v) = each %args) {
+    if (exists $params{$k}) {
+      my $method = "set_$k";
+      $self->$method($v);
+    } else {
+      die "Unknown parameter '$k'\n";
     }
   }
 }
@@ -121,7 +124,9 @@ sub add_instance {
 
   #warn "Adding document: (@indices), (@values) => $params{label}\n";
   my $id = exists $params{query_id} ? $params{query_id} : 0;
-  $self->add_instance_i($params{label}, "", \@indices, \@values, $id);
+  my $slack = exists $params{slack_id} ? $params{slack_id} : 1;
+  my $cost = exists $params{cost_factor} ? $params{cost_factor} : 1.0;
+  $self->add_instance_i($params{label}, "", \@indices, \@values, $id, $slack, $cost);
 }
 
 sub write_model {
@@ -305,11 +310,20 @@ is unspecified for a certain instance, it is equivalent to specifying
 a value of zero.  Typically you can save a lot of memory (and
 potentially training time) by omitting zero-valued attributes.
 
+Each training instance may have a "cost factor" assigned to it,
+indicating the relative cost of misclassification of the instance.
+The default is a cost of 1.0; to assign a different cost, pass a
+C<cost_factor> parameter with the desired value.
+
 When using a ranking SVM, you may also pass a C<query_id> parameter,
 whose integer value will identify the group of instances in which this
 instance belongs for ranking purposes.
 
-=item add_instance_i($label, $name, \@indices, \@values)
+Finally, a C<slack_id> parameter may also be passed and it will become
+the C<slackid> member of the underlying C<DOC> C struct, used in an
+"OPTIMIZATION" SVM (C<type==4>).
+
+=item add_instance_i($label, $name, \@indices, \@values, $query_id=0, $slack_id=0, $cost_factor=1.0)
 
 This is just like C<add_instance()>, but bypasses all the
 string-to-integer mapping of feature names.  Use this method when you
@@ -452,7 +466,7 @@ Ken Williams, E<lt>kwilliams@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-The C<Algorithm::SVMLight> perl interface is copyright (C) 2005
+The C<Algorithm::SVMLight> perl interface is copyright (C) 2005-2008
 Thomson Legal & Regulatory, and written by Ken Williams.  It is free
 software; you can redistribute it and/or modify it under the same
 terms as C<perl> itself.

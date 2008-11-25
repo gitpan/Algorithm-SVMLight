@@ -1,7 +1,7 @@
 
 use strict;
 use vars qw($TODO);
-use Test::More tests => 27;
+use Test::More tests => 28 ;
 BEGIN { use_ok('Algorithm::SVMLight') };
 
 use File::Spec;
@@ -111,6 +111,11 @@ EOF
   is $s->get_type, 3;
   is $s->get_kernel_type, 2;
   is $s->get_rbf_gamma, 2;
+
+
+  # Test constructor death
+  eval { Algorithm::SVMLight->new(bad_param => 1) };
+  like $@, qr{unknown}i;
 }
 
 
